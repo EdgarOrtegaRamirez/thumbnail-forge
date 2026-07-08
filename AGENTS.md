@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Thumbnail Forge is a Go CLI tool that generates thumbnails for 30+ file types across 8 categories. Two-tier architecture: pure Go core (Tier 1) with optional CGo/external tool extensions (Tier 2).
+Thumbnail Forge is a Go CLI tool that generates thumbnails for 40+ file types across 10 categories. Two-tier architecture: pure Go core (Tier 1) with optional CGo/external tool extensions (Tier 2). Includes Apple ecosystem support (HEIC/HEIF/AVIF, ICNS, ALAC, ProRes, iWork, DMG, IPA).
 
 - **Module:** `github.com/EdgarOrtegaRamirez/thumbnail-forge`
 - **Go version:** 1.25+
@@ -14,13 +14,15 @@ Thumbnail Forge is a Go CLI tool that generates thumbnails for 30+ file types ac
 
 ### Core Components
 
-1. **Detection Layer** (`internal/detect/detect.go`, 377 lines)
+1. **Detection Layer** (`internal/detect/detect.go`, 447 lines)
    - Identifies file types using magic bytes (first 512 bytes) and extensions
    - RIFF container disambiguation: checks bytes 8-12 for WEBP/WAVE/AVI
-   - ZIP content inspection: distinguishes Office docs (DOCX/XLSX/PPTX) from plain archives
+   - ftyp brand detection: ISO BMFF containers (HEIC/HEIF/AVIF/M4A/MP4/MOV) distinguished by brand string
+   - ZIP content inspection: distinguishes Office docs (DOCX/XLSX/PPTX/iWork) and IPA from plain archives
+   - DMG detection: checks for 'koly' magic trailer at end of file
    - Returns `FileInfo` with file type, MIME type, and metadata
 
-2. **Handler Layer** (`internal/handlers/`, 8 handlers)
+2. **Handler Layer** (`internal/handlers/`, 9 handlers)
    - Each handler implements `CanHandle()` and `Generate()`
    - Returns `ThumbnailResult` with rendered image
    - Graceful degradation: placeholder thumbnails when external tools missing
@@ -49,15 +51,16 @@ Handlers are registered in `cmd/generate.go` via a switch on `info.FileType`:
 
 ```go
 switch info.FileType {
-case models.FileTypeImage:    handler = &handlers.ImageHandler{}
-case models.FileTypeCode:    handler = &handlers.CodeHandler{}
-case models.FileTypeText:    handler = &handlers.CodeHandler{}
-case models.FileTypeMarkdown: handler = &handlers.CodeHandler{}
-case models.FileTypePDF:     handler = &handlers.PDFHandler{}
-case models.FileTypeVideo:   handler = &handlers.VideoHandler{}
-case models.FileTypeAudio:   handler = &handlers.AudioHandler{}
-case models.FileTypeOffice:  handler = &handlers.OfficeHandler{}
-case models.FileTypeArchive: handler = &handlers.ArchiveHandler{}
+case models.FileTypeImage:     handler = &handlers.ImageHandler{}
+case models.FileTypeCode:      handler = &handlers.CodeHandler{}
+case models.FileTypeText:      handler = &handlers.CodeHandler{}
+case models.FileTypeMarkdown:  handler = &handlers.CodeHandler{}
+case models.FileTypePDF:       handler = &handlers.PDFHandler{}
+case models.FileTypeVideo:     handler = &handlers.VideoHandler{}
+case models.FileTypeAudio:     handler = &handlers.AudioHandler{}
+case models.FileTypeOffice:    handler = &handlers.OfficeHandler{}
+case models.FileTypeArchive:   handler = &handlers.ArchiveHandler{}
+case models.FileTypeDiskImage: handler = &handlers.DiskImageHandler{}
 }
 ```
 
@@ -65,25 +68,31 @@ case models.FileTypeArchive: handler = &handlers.ArchiveHandler{}
 
 1. **Magic bytes** — file signature (first 512 bytes)
 2. **RIFF disambiguation** — bytes 8-12 distinguish WebP (image) / WAV (audio) / AVI (video)
-3. **ZIP content inspection** — extension check distinguishes DOCX/XLSX/PPTX from plain ZIP
-4. **Extension fallback** — when magic bytes are inconclusive
+3. **ftyp brand detection** — ISO BMFF containers distinguished by brand string: heic/heix/mif1 → HEIC, avif/avis → AVIF, M4A → audio, qt → MOV, default → MP4
+4. **ZIP content inspection** — extension check distinguishes DOCX/XLSX/PPTX/iWork from plain ZIP, IPA from plain ZIP
+5. **DMG koly trailer** — checks for 'koly' magic at end of file for Apple disk images
+6. **Extension fallback** — when magic bytes are inconclusive
 
 ## Handlers
 
 | Handler | File | Lines | Tier | Dependencies | Formats |
 |---------|------|-------|------|-------------|---------|
-| Image | `image.go` | 133 | 1 (Pure Go) | imaging, x/image | PNG, JPEG, GIF, WebP, BMP, TIFF |
+| Image | `image.go` | 259 | 1+2 (Pure Go + External) | imaging, x/image, heif-convert | PNG, JPEG, GIF, WebP, BMP, TIFF, ICNS (pure Go), HEIC/HEIF/AVIF (heif-convert) |
 | Code | `code.go` | 213 | 1 (Pure Go) | Chroma, fogleman/gg, Goldmark | Go, Python, JS, TS, Rust, Java, C, Ruby, etc. |
-| Archive | `archive.go` | 232 | 1 (Pure Go) | stdlib archive/* | ZIP, TAR, TAR.GZ |
+| Archive | `archive.go` | 232 | 1 (Pure Go) | stdlib archive/* | ZIP, TAR, TAR.GZ, 7z, RAR, IPA |
+| DiskImage | `diskimage.go` | 82 | 1 (Pure Go) | stdlib | DMG, ISO, IMG (placeholder) |
 | PDF | `pdf.go` | 92 | 2 (CGo) | go-fitz (MuPDF) | PDF |
-| Video | `video.go` | 166 | 2 (External) | ffmpeg | MP4, MOV, MKV, WebM, AVI |
-| Audio | `audio.go` | 181 | 2 (External) | dhowden/tag, ffmpeg | MP3, WAV, FLAC, OGG |
-| Office | `office.go` | 173 | 2 (External) | LibreOffice + MuPDF | DOCX, XLSX, PPTX, ODT, ODS, ODP |
+| Video | `video.go` | 166 | 2 (External) | ffmpeg | MP4, MOV, MKV, WebM, AVI, ProRes |
+| Audio | `audio.go` | 181 | 2 (External) | dhowden/tag, ffmpeg | MP3, WAV, FLAC, OGG, M4A, ALAC, AAC, AIFF |
+| Office | `office.go` | 173 | 2 (External) | LibreOffice + MuPDF | DOCX, XLSX, PPTX, ODT, ODS, ODP, PAGES, NUMBERS, KEY |
 
 ### Exported Functions
 
-- `handlers.LoadImage(path string)` — loads any supported image format
+- `handlers.LoadImage(path string)` — loads any supported image format (PNG, JPEG, GIF, WebP, BMP, TIFF, HEIC, HEIF, AVIF, ICNS)
 - `handlers.ResizeImage(img image.Image, w, h int)` — Lanczos resize
+- `handlers.loadHEIF(path string)` — HEIC/HEIF decoding via heif-convert (internal)
+- `handlers.loadICNS(path string)` — Apple ICNS parsing via pure Go (internal)
+- `handlers.loadPNG(path string)` — PNG loading helper (internal)
 - These are exported for cross-package use by PDF and Video handlers
 
 ## Development
@@ -179,6 +188,9 @@ See [BENCHMARKS.md](BENCHMARKS.md) for the full report.
 2. **ffmpeg single-image output** — Missing `-update 1` flag prevented waveform PNG creation.
 3. **TIFF color model** — ffmpeg-generated TIFFs use unsupported color model. Fixed by generating via Go's `image/tiff` encoder with NRGBA.
 4. **Office-as-archive detection** — DOCX/XLSX/PPTX detected as ZIP archives. Fixed by checking extension when ZIP magic bytes match.
+5. **HEIC/MP4 ftyp overlap** — HEIC and MP4 both use ISO BMFF ftyp boxes with similar sizes. Fixed by brand-based detection (heic/heix/mif1 → HEIC, mp41/mp42/isom → MP4, qt → MOV) instead of box size matching.
+6. **Audio waveform compositing** — ffmpeg `showwavespic` produces transparent PNGs. Fixed by compositing waveform onto background color after loading.
+7. **ProRes timestamp parsing** — `parseTimestamp` didn't handle "1s" format with 's' suffix. Fixed by stripping trailing 's'.
 
 ## Security Notes
 
@@ -190,7 +202,10 @@ See [BENCHMARKS.md](BENCHMARKS.md) for the full report.
 
 ## Future Enhancements
 
-- [ ] Add more image formats (HEIC, AVIF, PSD)
+- [x] ~~Add HEIC/AVIF image formats~~ (done — via heif-convert)
+- [x] ~~Add Apple ICNS icon format~~ (done — pure Go parser)
+- [x] ~~Add Apple ALAC/ProRes/iWork/DMG/IPA~~ (done)
+- [ ] Add PSD (Photoshop) image format
 - [ ] Implement batch processing mode
 - [ ] Add video thumbnail caching
 - [ ] Support remote files (HTTP/FTP)
@@ -200,3 +215,5 @@ See [BENCHMARKS.md](BENCHMARKS.md) for the full report.
 - [ ] Persistent ffmpeg/LibreOffice process for performance
 - [ ] Stream/truncate code input before Chroma tokenization
 - [ ] Native Sixel encoder (currently falls back to Unicode)
+- [ ] DMG content rendering (mount and show actual contents instead of placeholder)
+- [ ] HEIC/AVIF pure Go decoder (remove heif-convert dependency)

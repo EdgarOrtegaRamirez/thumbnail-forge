@@ -94,10 +94,12 @@ func (h *AudioHandler) generateWaveform(info *models.FileInfo, opts *models.Thum
 	tmpWaveform := filepath.Join(tmpDir, "waveform.png")
 
 	// Generate waveform using ffmpeg
+	// showwavespic colors parameter specifies waveform channel colors
+	// We use a bright color for the waveform and fill background separately
 	cmd := exec.Command("ffmpeg",
 		"-i", info.Path,
 		"-filter_complex", fmt.Sprintf(
-			"showwavespic=s=%dx%d:colors=0x1e1e2e|0xcdd6f4",
+			"showwavespic=s=%dx%d:colors=0xcdd6f4|0xf5e0dc:split_channels=0",
 			opts.Width, opts.Height,
 		),
 		"-frames:v", "1",
@@ -121,12 +123,38 @@ func (h *AudioHandler) generateWaveform(info *models.FileInfo, opts *models.Thum
 		return nil, fmt.Errorf("failed to load waveform: %w", err)
 	}
 
+	// Check if the waveform is empty (all transparent or all background)
+	// This can happen with very short or silent audio
+	if isEmptyWaveform(img) {
+		return h.generatePlaceholder(info, opts)
+	}
+
+	// Resize to requested dimensions
+	resized := ResizeImage(img, opts.Width, opts.Height)
+
+	// Composite onto background (ffmpeg produces transparent PNG)
+	result := compositeOnBackground(resized, opts.Background)
+
 	return &models.ThumbnailResult{
-		Image:    img,
+		Image:    result,
 		MimeType: "image/png",
 		Width:    opts.Width,
 		Height:   opts.Height,
 	}, nil
+}
+
+// isEmptyWaveform checks if a waveform image is empty (all transparent pixels)
+func isEmptyWaveform(img image.Image) bool {
+	bounds := img.Bounds()
+	nonTransparent := 0
+	for y := bounds.Min.Y; y < bounds.Max.Y; y += 4 {
+		for x := bounds.Min.X; x < bounds.Max.X; x += 4 {
+			if _, _, _, a := img.At(x, y).RGBA(); a > 0 {
+				nonTransparent++
+			}
+		}
+	}
+	return nonTransparent == 0
 }
 
 // generatePlaceholder generates a placeholder image with a music note icon

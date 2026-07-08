@@ -171,3 +171,23 @@ All benchmarks passed. Total benchmark runtime: ~108 seconds.
 3. **TIFF color model** — ffmpeg-generated TIFFs use a color model Go's TIFF decoder doesn't support. Fixed by generating TIFFs via Go's `image/tiff` encoder with NRGBA color model.
 
 4. **DOCX/XLSX/PPTX detection** — Office documents (ZIP-based) were detected as archives. Fixed by checking extension when ZIP magic bytes are found.
+
+## Bugs Found & Fixed During Apple Format Implementation
+
+5. **HEIC/MP4 ftyp box overlap** — HEIC and MP4 both use ISO BMFF ftyp boxes with similar box sizes (0x20 vs 0x18/0x1C). Magic byte matching by size caused misclassification. Fixed by switching to brand-based detection: checking the 4-byte brand string at offset 8-12 (heic/heix/mif1/hevc → HEIC, avif/avis → AVIF, M4A → audio, qt → MOV, default → MP4).
+
+6. **Audio waveform transparency** — ffmpeg's `showwavespic` filter produces a transparent PNG with only the waveform lines visible. The thumbnail appeared empty because transparency wasn't composited onto the background. Fixed by adding a compositing step that draws the waveform onto the configured background color.
+
+7. **ProRes timestamp parsing** — The `parseTimestamp` function didn't handle the "1s" default timestamp format (with trailing 's'). Fixed by stripping the trailing 's' before parsing.
+
+## Apple Format Support
+
+Apple ecosystem formats were added post-benchmark. The following formats are now supported but not included in the benchmark suite above:
+
+- **HEIC/HEIF/AVIF** — Decoded via `heif-convert` shell-out (libheif-examples). Performance similar to image decoding + process startup (~10-50 ms).
+- **ICNS** — Decoded via pure Go parser. Fast (~1-5 ms), no external dependency.
+- **ALAC/AIFF** — Decoded via ffmpeg. Performance similar to other audio formats (~185-220 ms).
+- **ProRes** — Decoded via ffmpeg as MOV. Performance similar to other video formats (~200-290 ms).
+- **iWork (PAGES/NUMBERS/KEY)** — Routed to LibreOffice handler. Performance similar to Office formats (~700-900 ms).
+- **DMG/IMG** — Placeholder handler. Very fast (<1 ms), generates disk icon.
+- **IPA** — Routed to archive handler. Performance similar to ZIP (~374-598 µs).

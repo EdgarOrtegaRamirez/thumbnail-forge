@@ -4,8 +4,9 @@ A Go CLI tool that generates thumbnails for virtually any file type — images, 
 
 ## Features
 
-- **Multi-format support**: 30+ file types across 8 categories
-- **Smart detection**: Magic bytes + extension-based file type identification
+- **Multi-format support**: 40+ file types across 10 categories (images, video, PDF, office, audio, code, text, markdown, archives, disk images)
+- **Apple ecosystem**: HEIC/HEIF/AVIF, ICNS, ALAC, ProRes, iWork (Pages/Numbers/Key), DMG, IPA
+- **Smart detection**: Magic bytes + extension-based file type identification with ftyp brand disambiguation
 - **High quality**: Lanczos resampling, Chroma syntax highlighting, MuPDF rendering
 - **Terminal output**: Display thumbnails inline (Kitty, iTerm2, Sixel, Unicode fallback)
 - **Customizable**: Configurable dimensions, colors, themes, and output formats
@@ -19,7 +20,8 @@ A Go CLI tool that generates thumbnails for virtually any file type — images, 
 - **Go 1.25+** (required)
 - **ffmpeg** — video frame extraction, audio waveform generation
 - **libmupdf-dev** — PDF rendering via go-fitz (CGo)
-- **LibreOffice** — office document conversion (DOCX/XLSX/PPTX)
+- **LibreOffice** — office document conversion (DOCX/XLSX/PPTX/iWork)
+- **heif-convert** (libheif-examples) — HEIC/HEIF/AVIF image decoding (optional)
 
 ### Build
 
@@ -28,7 +30,7 @@ git clone https://github.com/EdgarOrtegaRamirez/thumbnail-forge.git
 cd thumbnail-forge
 
 # Install system dependencies (Debian/Ubuntu)
-sudo apt-get install -y ffmpeg libmupdf-dev libreoffice-core libreoffice-writer libreoffice-calc libreoffice-impress
+sudo apt-get install -y ffmpeg libmupdf-dev libreoffice-core libreoffice-writer libreoffice-calc libreoffice-impress libheif-examples
 
 # Build
 go build -o thumbnail-forge .
@@ -85,20 +87,23 @@ thumbforge list
 
 | Category | Formats | Handler |
 |----------|---------|---------|
-| Images | PNG, JPEG, GIF, WebP, BMP, TIFF | `image.go` |
+| Images | PNG, JPEG, GIF, WebP, BMP, TIFF, ICNS | `image.go` |
 | Code | Go, Python, JavaScript, TypeScript, Rust, Java, C, C++, Ruby, and more | `code.go` |
 | Text | TXT, JSON, XML, YAML, CSV, log files | `code.go` |
 | Markdown | MD | `code.go` |
-| Archives | ZIP, TAR, TAR.GZ | `archive.go` |
+| Archives | ZIP, TAR, TAR.GZ, 7z, RAR, BZ2, XZ | `archive.go` |
+| Disk Images | DMG, ISO, IMG (placeholder icon) | `diskimage.go` |
 
 ### Tier 2 — External tools required
 
 | Category | Formats | Dependency | Handler |
 |----------|---------|------------|---------|
+| Images | HEIC, HEIF, AVIF | heif-convert (libheif-examples) | `image.go` |
 | PDF | PDF | MuPDF (libmupdf-dev) | `pdf.go` |
-| Video | MP4, MOV, MKV, WebM, AVI | ffmpeg | `video.go` |
-| Audio | MP3, WAV, FLAC, OGG | ffmpeg + dhowden/tag | `audio.go` |
-| Office | DOCX, XLSX, PPTX, ODT, ODS, ODP | LibreOffice | `office.go` |
+| Video | MP4, MOV, MKV, WebM, AVI, ProRes | ffmpeg | `video.go` |
+| Audio | MP3, WAV, FLAC, OGG, M4A, ALAC, AAC, AIFF | ffmpeg + dhowden/tag | `audio.go` |
+| Office | DOCX, XLSX, PPTX, ODT, ODS, ODP, PAGES, NUMBERS, KEY | LibreOffice | `office.go` |
+| Archives | IPA (iOS app packages) | ZIP-based | `archive.go` |
 
 Handlers gracefully degrade: if an external tool is missing, a placeholder thumbnail is generated instead of failing.
 
@@ -148,8 +153,10 @@ type Handler interface {
 Priority order:
 1. **Magic bytes** — file signature (first 512 bytes)
 2. **RIFF container disambiguation** — checks bytes 8-12 for WEBP/WAVE/AVI
-3. **ZIP content inspection** — distinguishes Office docs (DOCX/XLSX/PPTX) from plain archives
-4. **File extension** — fallback when magic bytes are inconclusive
+3. **ftyp brand detection** — ISO BMFF containers (HEIC/HEIF/AVIF/M4A/MP4/MOV) distinguished by brand string at bytes 8-12
+4. **ZIP content inspection** — distinguishes Office docs (DOCX/XLSX/PPTX/iWork) and IPA from plain archives
+5. **DMG koly trailer** — checks for 'koly' magic at end of file for Apple disk images
+6. **File extension** — fallback when magic bytes are inconclusive
 
 ### Project Structure
 
@@ -166,13 +173,14 @@ thumbnail-forge/
 │   │   ├── detect.go               # Magic byte + extension detection
 │   │   └── detect_test.go          # Detection tests (11 tests)
 │   ├── handlers/
-│   │   ├── image.go                # PNG/JPEG/GIF/WebP/BMP/TIFF handler
+│   │   ├── image.go                # PNG/JPEG/GIF/WebP/BMP/TIFF/HEIC/AVIF/ICNS handler
 │   │   ├── code.go                 # Code/text/markdown handler (Chroma)
 │   │   ├── pdf.go                  # PDF handler (go-fitz/MuPDF)
 │   │   ├── video.go                # Video handler (ffmpeg)
 │   │   ├── audio.go                # Audio handler (tag + ffmpeg waveform)
 │   │   ├── office.go               # Office handler (LibreOffice → PDF)
 │   │   ├── archive.go              # ZIP/TAR/TAR.GZ handler
+│   │   ├── diskimage.go            # DMG/ISO/IMG placeholder handler
 │   │   ├── benchmark_test.go       # 55 benchmarks across all handlers
 │   │   └── *_test.go               # Unit tests per handler
 │   └── terminal/
@@ -241,6 +249,7 @@ go test -race ./internal/...
 ### Test Status
 
 - **61 tests pass**, 2 skip, 0 fail
+- **10 Apple format detection tests** (HEIC, HEIF, AVIF, ICNS, M4A, DMG, iWork, IPA, ProRes, ALAC)
 - **55 benchmarks** across all handlers
 - **58 benchmark fixtures** (2.2 MB total)
 
@@ -266,7 +275,9 @@ go test -race ./internal/...
 |---------|-------------|----------------------|
 | ffmpeg | Video, Audio | `apt-get install ffmpeg` |
 | libmupdf-dev | PDF | `apt-get install libmupdf-dev` |
-| LibreOffice | Office docs | `apt-get install libreoffice-core libreoffice-writer libreoffice-calc libreoffice-impress` |
+| LibreOffice | Office docs, iWork | `apt-get install libreoffice-core libreoffice-writer libreoffice-calc libreoffice-impress` |
+| libheif-examples | HEIC/HEIF/AVIF | `apt-get install libheif-examples` |
+| libvips-dev | Extended image formats | `apt-get install libvips-dev` |
 
 ## License
 
