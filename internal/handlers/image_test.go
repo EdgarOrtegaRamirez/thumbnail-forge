@@ -57,10 +57,10 @@ func TestImageHandler_Generate_PNG(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := png.Encode(f, img); err != nil {
-		f.Close()
+		_ = f.Close()
 		t.Fatal(err)
 	}
-	f.Close()
+	_ = f.Close()
 
 	// Test the handler
 	handler := &ImageHandler{}
@@ -122,10 +122,10 @@ func TestImageHandler_Generate_JPEG(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := jpeg.Encode(f, img, &jpeg.Options{Quality: 90}); err != nil {
-		f.Close()
+		_ = f.Close()
 		t.Fatal(err)
 	}
-	f.Close()
+	_ = f.Close()
 
 	// Test the handler
 	handler := &ImageHandler{}
@@ -182,10 +182,10 @@ func TestImageHandler_Generate_Transparency(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := png.Encode(f, img); err != nil {
-		f.Close()
+		_ = f.Close()
 		t.Fatal(err)
 	}
-	f.Close()
+	_ = f.Close()
 
 	// Test the handler with custom background
 	handler := &ImageHandler{}
@@ -230,10 +230,10 @@ func TestImageHandler_Generate_AspectRatio(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := png.Encode(f, img); err != nil {
-		f.Close()
+		_ = f.Close()
 		t.Fatal(err)
 	}
-	f.Close()
+	_ = f.Close()
 
 	// Test with 100x100 output - should maintain 2:1 aspect ratio
 	handler := &ImageHandler{}
@@ -281,10 +281,10 @@ func TestLoadImage(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := png.Encode(f, img); err != nil {
-		f.Close()
+		_ = f.Close()
 		t.Fatal(err)
 	}
-	f.Close()
+	_ = f.Close()
 
 	// Load the image
 	loaded, err := LoadImage(path)

@@ -240,7 +240,7 @@ func saveImage(img image.Image, path, format string, quality int) error {
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	switch strings.ToLower(format) {
 	case "jpg", "jpeg":
