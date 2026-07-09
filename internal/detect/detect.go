@@ -185,7 +185,7 @@ func Detect(path string) (*models.FileInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	header := make([]byte, 512)
 	n, err := f.Read(header)

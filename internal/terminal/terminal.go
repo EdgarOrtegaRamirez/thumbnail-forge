@@ -228,8 +228,8 @@ func encodePNG(img image.Image, buf *[]byte) error {
 	if err != nil {
 		return err
 	}
-	defer os.Remove(f.Name())
-	defer f.Close()
+	defer func() { _ = os.Remove(f.Name()) }()
+	defer func() { _ = f.Close() }()
 
 	// Encode the image
 	if err := png.Encode(f, img); err != nil {
@@ -237,7 +237,9 @@ func encodePNG(img image.Image, buf *[]byte) error {
 	}
 
 	// Read the file back
-	f.Seek(0, 0)
+	if _, err := f.Seek(0, 0); err != nil {
+		return err
+	}
 	*buf, err = os.ReadFile(f.Name())
 	return err
 }

@@ -63,7 +63,7 @@ func getZipContents(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 
 	var contents []string
 	for _, f := range r.File {
@@ -79,7 +79,7 @@ func getTarContents(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	tr := tar.NewReader(f)
 	var contents []string
@@ -105,13 +105,13 @@ func getTarGzContents(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	gz, err := gzip.NewReader(f)
 	if err != nil {
 		return nil, err
 	}
-	defer gz.Close()
+	defer func() { _ = gz.Close() }()
 
 	tr := tar.NewReader(gz)
 	var contents []string

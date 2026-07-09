@@ -26,7 +26,7 @@ func (h *PDFHandler) Generate(info *models.FileInfo, opts *models.ThumbnailOptio
 	if err != nil {
 		return nil, fmt.Errorf("failed to open PDF: %w", err)
 	}
-	defer doc.Close()
+	defer func() { _ = doc.Close() }()
 
 	// Get page count
 	pageCount := doc.NumPage()
@@ -79,7 +79,7 @@ func GetPageCount(path string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer doc.Close()
+	defer func() { _ = doc.Close() }()
 	return doc.NumPage(), nil
 }
 

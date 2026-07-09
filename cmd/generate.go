@@ -206,7 +206,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
-	defer tmpFile.Close()
+	defer func() { _ = tmpFile.Close() }()
 
 	if err := saveImage(result.Image, tmpFile.Name(), opts.Format, opts.Quality); err != nil {
 		return err

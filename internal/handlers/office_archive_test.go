@@ -129,7 +129,7 @@ func TestArchiveHandler_Generate_Zip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer zipFile.Close()
+	defer func() { _ = zipFile.Close() }()
 
 	w := zip.NewWriter(zipFile)
 
@@ -147,7 +147,7 @@ func TestArchiveHandler_Generate_Zip(t *testing.T) {
 	if err := w.Close(); err != nil {
 		t.Fatal(err)
 	}
-	zipFile.Close()
+	_ = zipFile.Close()
 
 	// Test the handler
 	handler := &ArchiveHandler{}
@@ -228,7 +228,7 @@ func TestGetZipContents(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer zipFile.Close()
+	defer func() { _ = zipFile.Close() }()
 
 	w := zip.NewWriter(zipFile)
 
@@ -249,7 +249,7 @@ func TestGetZipContents(t *testing.T) {
 	if err := w.Close(); err != nil {
 		t.Fatal(err)
 	}
-	zipFile.Close()
+	_ = zipFile.Close()
 
 	// Get the contents
 	contents, err := getZipContents(zipPath)

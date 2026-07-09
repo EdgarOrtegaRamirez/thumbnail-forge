@@ -88,7 +88,7 @@ func loadHEIF(path string) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	outPath := filepath.Join(tmpDir, "output.png")
 

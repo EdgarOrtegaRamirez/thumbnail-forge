@@ -17,9 +17,9 @@ func TestDetectProtocol(t *testing.T) {
 
 	// Restore environment after test
 	defer func() {
-		os.Setenv("KITTY_WINDOW_ID", origKitty)
-		os.Setenv("TERM_PROGRAM", origTerm)
-		os.Setenv("SIXEL_SUPPORT", origSixel)
+		_ = os.Setenv("KITTY_WINDOW_ID", origKitty)
+		_ = os.Setenv("TERM_PROGRAM", origTerm)
+		_ = os.Setenv("SIXEL_SUPPORT", origSixel)
 	}()
 
 	tests := []struct {
@@ -57,13 +57,13 @@ func TestDetectProtocol(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Clear all environment variables
-			os.Unsetenv("KITTY_WINDOW_ID")
-			os.Unsetenv("TERM_PROGRAM")
-			os.Unsetenv("SIXEL_SUPPORT")
+			_ = os.Unsetenv("KITTY_WINDOW_ID")
+			_ = os.Unsetenv("TERM_PROGRAM")
+			_ = os.Unsetenv("SIXEL_SUPPORT")
 
 			// Set test environment variables
 			for k, v := range tt.env {
-				os.Setenv(k, v)
+				_ = os.Setenv(k, v)
 			}
 
 			// Test detection

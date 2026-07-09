@@ -36,7 +36,7 @@ func (h *OfficeHandler) Generate(info *models.FileInfo, opts *models.ThumbnailOp
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp directory: %w", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Convert to PDF using LibreOffice
 	pdfPath, err := convertToPDF(info.Path, tmpDir)

@@ -89,7 +89,7 @@ func (h *AudioHandler) generateWaveform(info *models.FileInfo, opts *models.Thum
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp directory: %w", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	tmpWaveform := filepath.Join(tmpDir, "waveform.png")
 
