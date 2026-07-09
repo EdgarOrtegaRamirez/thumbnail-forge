@@ -64,7 +64,7 @@ func LoadImage(path string) (image.Image, error) {
 	}
 
 	img, _, err := image.Decode(f)
-	f.Close()
+	_ = f.Close()
 	if err == nil {
 		return img, nil
 	}

@@ -211,10 +211,10 @@ func TestExtractAlbumArt(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := jpeg.Encode(f, albumArt, nil); err != nil {
-		f.Close()
+		_ = f.Close()
 		t.Fatal(err)
 	}
-	f.Close()
+	_ = f.Close()
 
 	// Create a test audio file with album art
 	audioPath := filepath.Join(tmpDir, "test.mp3")
