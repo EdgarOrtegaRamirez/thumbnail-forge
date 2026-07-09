@@ -35,7 +35,7 @@ func (h *VideoHandler) Generate(info *models.FileInfo, opts *models.ThumbnailOpt
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp directory: %w", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	tmpFrame := filepath.Join(tmpDir, "frame.jpg")
 
@@ -117,9 +117,7 @@ func extractFrame(videoPath, outputPath, timestamp string) error {
 // parseTimestamp parses a timestamp string into seconds
 func parseTimestamp(timestamp string) (float64, error) {
 	// Handle "Ns" format (e.g., "1s", "5.5s")
-	if strings.HasSuffix(timestamp, "s") {
-		timestamp = strings.TrimSuffix(timestamp, "s")
-	}
+	timestamp = strings.TrimSuffix(timestamp, "s")
 
 	// Handle simple numeric values (e.g., "1", "5.5")
 	if seconds, err := strconv.ParseFloat(timestamp, 64); err == nil {

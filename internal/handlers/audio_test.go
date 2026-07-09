@@ -127,10 +127,10 @@ func TestAudioHandler_Generate_WithAlbumArt(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := jpeg.Encode(f, albumArt, nil); err != nil {
-		f.Close()
+		_ = f.Close()
 		t.Fatal(err)
 	}
-	f.Close()
+	_ = f.Close()
 
 	// Create a test audio file with album art using ffmpeg
 	audioPath := filepath.Join(tmpDir, "test_with_art.mp3")
