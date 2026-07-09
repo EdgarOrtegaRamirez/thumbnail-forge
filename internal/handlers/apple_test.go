@@ -2,10 +2,18 @@ package handlers
 
 import (
 	"os"
+	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/EdgarOrtegaRamirez/thumbnail-forge/internal/models"
 )
+
+// heifConvertAvailable checks whether the heif-convert external tool is installed.
+func heifConvertAvailable() bool {
+	_, err := exec.LookPath("heif-convert")
+	return err == nil
+}
 
 func TestImageHandler_AppleFormats(t *testing.T) {
 	handler := &ImageHandler{}
@@ -17,12 +25,13 @@ func TestImageHandler_AppleFormats(t *testing.T) {
 	}
 
 	tests := []struct {
-		name     string
-		filename string
+		name      string
+		filename  string
+		needsTool bool // true if this format requires the heif-convert external tool
 	}{
-		{"HEIC", "sample.heic"},
-		{"AVIF", "sample.avif"},
-		{"ICNS", "sample.icns"},
+		{"HEIC", "sample.heic", true},
+		{"AVIF", "sample.avif", true},
+		{"ICNS", "sample.icns", false},
 	}
 
 	for _, tt := range tests {
@@ -30,6 +39,12 @@ func TestImageHandler_AppleFormats(t *testing.T) {
 			path := appleFixturePath(tt.filename)
 			if _, err := os.Stat(path); os.IsNotExist(err) {
 				t.Skipf("fixture not found: %s", path)
+			}
+
+			// HEIC/AVIF decoding requires the external heif-convert tool;
+			// skip gracefully when it is not installed (e.g. CI without libheif-examples).
+			if tt.needsTool && !heifConvertAvailable() {
+				t.Skip("heif-convert not installed; skipping HEIC/AVIF test")
 			}
 
 			info := &models.FileInfo{
@@ -44,6 +59,10 @@ func TestImageHandler_AppleFormats(t *testing.T) {
 
 			result, err := handler.Generate(info, opts)
 			if err != nil {
+				// If the error is due to a missing external tool, skip instead of fail.
+				if strings.Contains(err.Error(), "executable file not found") {
+					t.Skipf("external tool not available: %v", err)
+				}
 				t.Fatalf("Generate() error: %v", err)
 			}
 			if result == nil {

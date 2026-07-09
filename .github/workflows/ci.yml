@@ -12,10 +12,10 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: '1.25'
 
@@ -23,6 +23,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y libmupdf-dev ffmpeg unzip zip tar
+        sudo apt-get install -y libheif-examples
         sudo apt-get install -y libreoffice-core libreoffice-writer libreoffice-calc libreoffice-impress
 
     - name: Build
@@ -45,15 +46,15 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: '1.25'
 
     - name: Run golangci-lint
-      uses: golangci/golangci-lint-action@v4
+      uses: golangci/golangci-lint-action@v8
       with:
         version: latest
 
@@ -64,10 +65,10 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: '1.25'
 
@@ -79,7 +80,7 @@ jobs:
         GOOS=windows GOARCH=amd64 go build -o thumbnail-forge-windows-amd64.exe .
 
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: |
           thumbnail-forge-linux-amd64
