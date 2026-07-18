@@ -147,10 +147,10 @@ func TestEncodeBase64(t *testing.T) {
 
 func TestSplitString(t *testing.T) {
 	tests := []struct {
-		name      string
-		input     string
-		size      int
-		expected  []string
+		name     string
+		input    string
+		size     int
+		expected []string
 	}{
 		{"Empty", "", 5, []string{}},
 		{"Short", "abc", 5, []string{"abc"}},

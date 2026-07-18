@@ -62,18 +62,18 @@ type FileInfo struct {
 
 // ThumbnailOptions contains user-provided options for thumbnail generation
 type ThumbnailOptions struct {
-	Width      int
-	Height     int
-	OutputPath string
-	Format     string // png, jpg, webp
-	Quality    int    // 1-100 for lossy formats
-	Background color.Color
-	Timestamp  string // Video frame timestamp (e.g., "1s", "00:00:05")
-	Page       int    // PDF page number
-	Theme      string // Code theme: dracula, monokai, github
-	Terminal   bool   // Output to terminal
-	Freedesktop bool  // Cache to ~/.cache/thumbnails/
-	List       bool   // List supported file types
+	Width       int
+	Height      int
+	OutputPath  string
+	Format      string // png, jpg, webp
+	Quality     int    // 1-100 for lossy formats
+	Background  color.Color
+	Timestamp   string // Video frame timestamp (e.g., "1s", "00:00:05")
+	Page        int    // PDF page number
+	Theme       string // Code theme: dracula, monokai, github
+	Terminal    bool   // Output to terminal
+	Freedesktop bool   // Cache to ~/.cache/thumbnails/
+	List        bool   // List supported file types
 }
 
 // ThumbnailResult contains the generated thumbnail

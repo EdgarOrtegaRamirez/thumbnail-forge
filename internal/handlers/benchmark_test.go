@@ -14,12 +14,12 @@ import (
 
 // BenchmarkResult holds timing for a single benchmark run
 type BenchmarkResult struct {
-	FileType   string
-	Extension  string
-	SizeLabel  string
-	FileSize   int64
-	Handler    string
-	NsPerOp    int64
+	FileType    string
+	Extension   string
+	SizeLabel   string
+	FileSize    int64
+	Handler     string
+	NsPerOp     int64
 	AllocsPerOp int64
 	BytesPerOp  int64
 }

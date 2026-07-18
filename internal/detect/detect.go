@@ -11,33 +11,33 @@ import (
 // Magic bytes for various file formats
 var magicBytes = map[string][]byte{
 	// Images
-	"jpeg": {0xFF, 0xD8, 0xFF},
-	"png":  {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A},
-	"gif":  {0x47, 0x49, 0x46, 0x38},
-	"bmp":  {0x42, 0x4D},
-	"webp": {0x52, 0x49, 0x46, 0x46}, // RIFF header, need to check for WEBP
-	"tiff": {0x49, 0x49, 0x2A, 0x00}, // Little-endian TIFF
-	"tiff_big": {0x4D, 0x4D, 0x00, 0x2A}, // Big-endian TIFF
-	"icns": {0x69, 0x63, 0x6E, 0x73}, // Apple ICNS
-	"heic": {0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63}, // ftypheic
-	"heif": {0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x78}, // ftypheix
-	"heif2": {0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x6D, 0x69, 0x66, 0x31}, // ftypmif1
-	"avif": {0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x66}, // ftypavif
-	"avif2": {0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x73}, // ftypavis
+	"jpeg":     {0xFF, 0xD8, 0xFF},
+	"png":      {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A},
+	"gif":      {0x47, 0x49, 0x46, 0x38},
+	"bmp":      {0x42, 0x4D},
+	"webp":     {0x52, 0x49, 0x46, 0x46},                                                 // RIFF header, need to check for WEBP
+	"tiff":     {0x49, 0x49, 0x2A, 0x00},                                                 // Little-endian TIFF
+	"tiff_big": {0x4D, 0x4D, 0x00, 0x2A},                                                 // Big-endian TIFF
+	"icns":     {0x69, 0x63, 0x6E, 0x73},                                                 // Apple ICNS
+	"heic":     {0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63}, // ftypheic
+	"heif":     {0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x78}, // ftypheix
+	"heif2":    {0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x6D, 0x69, 0x66, 0x31}, // ftypmif1
+	"avif":     {0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x66}, // ftypavif
+	"avif2":    {0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x73}, // ftypavis
 
 	// Video
-	"mp4":  {0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70}, // ftyp box
+	"mp4":   {0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70}, // ftyp box
 	"mp4_2": {0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70}, // Alternate ftyp
-	"mov":  {0x00, 0x00, 0x00, 0x14, 0x66, 0x74, 0x79, 0x70},
-	"avi":  {0x52, 0x49, 0x46, 0x46}, // RIFF header, need to check for AVI
-	"mkv":  {0x1A, 0x45, 0xDF, 0xA3},
+	"mov":   {0x00, 0x00, 0x00, 0x14, 0x66, 0x74, 0x79, 0x70},
+	"avi":   {0x52, 0x49, 0x46, 0x46}, // RIFF header, need to check for AVI
+	"mkv":   {0x1A, 0x45, 0xDF, 0xA3},
 
 	// Audio
-	"mp3": {0x49, 0x44, 0x33}, // ID3 header
+	"mp3":  {0x49, 0x44, 0x33}, // ID3 header
 	"flac": {0x66, 0x4C, 0x61, 0x43},
-	"ogg": {0x4F, 0x67, 0x67, 0x53},
-	"wav": {0x52, 0x49, 0x46, 0x46}, // RIFF header, need to check for WAVE
-	"m4a": {0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x4D, 0x34, 0x41, 0x20}, // ftypM4A
+	"ogg":  {0x4F, 0x67, 0x67, 0x53},
+	"wav":  {0x52, 0x49, 0x46, 0x46},                                                 // RIFF header, need to check for WAVE
+	"m4a":  {0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x4D, 0x34, 0x41, 0x20}, // ftypM4A
 
 	// PDF
 	"pdf": {0x25, 0x50, 0x44, 0x46}, // %PDF
@@ -88,18 +88,18 @@ var extensionToType = map[string]models.FileType{
 	".pdf": models.FileTypePDF,
 
 	// Office (including Apple iWork)
-	".docx": models.FileTypeOffice,
-	".xlsx": models.FileTypeOffice,
-	".pptx": models.FileTypeOffice,
-	".odt":  models.FileTypeOffice,
-	".ods":  models.FileTypeOffice,
-	".odp":  models.FileTypeOffice,
-	".doc":  models.FileTypeOffice,
-	".xls":  models.FileTypeOffice,
-	".ppt":  models.FileTypeOffice,
-	".pages":  models.FileTypeOffice,
+	".docx":    models.FileTypeOffice,
+	".xlsx":    models.FileTypeOffice,
+	".pptx":    models.FileTypeOffice,
+	".odt":     models.FileTypeOffice,
+	".ods":     models.FileTypeOffice,
+	".odp":     models.FileTypeOffice,
+	".doc":     models.FileTypeOffice,
+	".xls":     models.FileTypeOffice,
+	".ppt":     models.FileTypeOffice,
+	".pages":   models.FileTypeOffice,
 	".numbers": models.FileTypeOffice,
-	".key":    models.FileTypeOffice,
+	".key":     models.FileTypeOffice,
 	".keynote": models.FileTypeOffice,
 
 	// Audio (including Apple formats)
@@ -115,34 +115,34 @@ var extensionToType = map[string]models.FileType{
 	".aif":  models.FileTypeAudio,
 
 	// Code
-	".go":   models.FileTypeCode,
-	".py":   models.FileTypeCode,
-	".js":   models.FileTypeCode,
-	".ts":   models.FileTypeCode,
-	".jsx":  models.FileTypeCode,
-	".tsx":  models.FileTypeCode,
-	".java": models.FileTypeCode,
-	".cpp":  models.FileTypeCode,
-	".c":    models.FileTypeCode,
-	".h":    models.FileTypeCode,
-	".rs":   models.FileTypeCode,
-	".rb":   models.FileTypeCode,
-	".php":  models.FileTypeCode,
+	".go":    models.FileTypeCode,
+	".py":    models.FileTypeCode,
+	".js":    models.FileTypeCode,
+	".ts":    models.FileTypeCode,
+	".jsx":   models.FileTypeCode,
+	".tsx":   models.FileTypeCode,
+	".java":  models.FileTypeCode,
+	".cpp":   models.FileTypeCode,
+	".c":     models.FileTypeCode,
+	".h":     models.FileTypeCode,
+	".rs":    models.FileTypeCode,
+	".rb":    models.FileTypeCode,
+	".php":   models.FileTypeCode,
 	".swift": models.FileTypeCode,
-	".kt":   models.FileTypeCode,
+	".kt":    models.FileTypeCode,
 	".scala": models.FileTypeCode,
-	".clj":  models.FileTypeCode,
-	".sh":   models.FileTypeCode,
-	".bash": models.FileTypeCode,
-	".zsh":  models.FileTypeCode,
-	".ps1":  models.FileTypeCode,
-	".bat":  models.FileTypeCode,
+	".clj":   models.FileTypeCode,
+	".sh":    models.FileTypeCode,
+	".bash":  models.FileTypeCode,
+	".zsh":   models.FileTypeCode,
+	".ps1":   models.FileTypeCode,
+	".bat":   models.FileTypeCode,
 
 	// Text
-	".txt": models.FileTypeText,
-	".log": models.FileTypeText,
-	".csv": models.FileTypeText,
-	".tsv": models.FileTypeText,
+	".txt":  models.FileTypeText,
+	".log":  models.FileTypeText,
+	".csv":  models.FileTypeText,
+	".tsv":  models.FileTypeText,
 	".json": models.FileTypeText,
 	".xml":  models.FileTypeText,
 	".yaml": models.FileTypeText,
@@ -168,9 +168,9 @@ var extensionToType = map[string]models.FileType{
 	".ipa": models.FileTypeArchive,
 
 	// Disk Images (Apple)
-	".dmg":  models.FileTypeDiskImage,
-	".iso":  models.FileTypeDiskImage,
-	".img":  models.FileTypeDiskImage,
+	".dmg": models.FileTypeDiskImage,
+	".iso": models.FileTypeDiskImage,
+	".img": models.FileTypeDiskImage,
 }
 
 // Detect identifies the file type using magic bytes and extension
@@ -383,62 +383,62 @@ func checkGIFAnimated(header []byte) bool {
 // getMimeTypeFromExt returns MIME type from extension
 func getMimeTypeFromExt(ext string) string {
 	mimeMap := map[string]string{
-		".jpg":  "image/jpeg",
-		".jpeg": "image/jpeg",
-		".png":  "image/png",
-		".gif":  "image/gif",
-		".bmp":  "image/bmp",
-		".webp": "image/webp",
-		".tiff": "image/tiff",
-		".tif":  "image/tiff",
-		".svg":  "image/svg+xml",
-		".heic": "image/heic",
-		".heif": "image/heif",
-		".avif": "image/avif",
-		".icns": "image/icns",
-		".mp4":  "video/mp4",
-		".mov":  "video/quicktime",
-		".avi":  "video/x-msvideo",
-		".mkv":  "video/x-matroska",
-		".webm": "video/webm",
-		".flv":  "video/x-flv",
-		".wmv":  "video/x-ms-wmv",
-		".m4v":  "video/x-m4v",
-		".pdf":  "application/pdf",
-		".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-		".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-		".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-		".odt":  "application/vnd.oasis.opendocument.text",
-		".ods":  "application/vnd.oasis.opendocument.spreadsheet",
-		".odp":  "application/vnd.oasis.opendocument.presentation",
-		".doc":  "application/msword",
-		".xls":  "application/vnd.ms-excel",
-		".ppt":  "application/vnd.ms-powerpoint",
-		".pages":  "application/vnd.apple.pages",
+		".jpg":     "image/jpeg",
+		".jpeg":    "image/jpeg",
+		".png":     "image/png",
+		".gif":     "image/gif",
+		".bmp":     "image/bmp",
+		".webp":    "image/webp",
+		".tiff":    "image/tiff",
+		".tif":     "image/tiff",
+		".svg":     "image/svg+xml",
+		".heic":    "image/heic",
+		".heif":    "image/heif",
+		".avif":    "image/avif",
+		".icns":    "image/icns",
+		".mp4":     "video/mp4",
+		".mov":     "video/quicktime",
+		".avi":     "video/x-msvideo",
+		".mkv":     "video/x-matroska",
+		".webm":    "video/webm",
+		".flv":     "video/x-flv",
+		".wmv":     "video/x-ms-wmv",
+		".m4v":     "video/x-m4v",
+		".pdf":     "application/pdf",
+		".docx":    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+		".xlsx":    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		".pptx":    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+		".odt":     "application/vnd.oasis.opendocument.text",
+		".ods":     "application/vnd.oasis.opendocument.spreadsheet",
+		".odp":     "application/vnd.oasis.opendocument.presentation",
+		".doc":     "application/msword",
+		".xls":     "application/vnd.ms-excel",
+		".ppt":     "application/vnd.ms-powerpoint",
+		".pages":   "application/vnd.apple.pages",
 		".numbers": "application/vnd.apple.numbers",
-		".key":    "application/vnd.apple.keynote",
+		".key":     "application/vnd.apple.keynote",
 		".keynote": "application/vnd.apple.keynote",
-		".mp3":  "audio/mpeg",
-		".wav":  "audio/wav",
-		".flac": "audio/flac",
-		".ogg":  "audio/ogg",
-		".m4a":  "audio/mp4",
-		".aac":  "audio/aac",
-		".wma":  "audio/x-ms-wma",
-		".alac": "audio/alac",
-		".aiff": "audio/aiff",
-		".aif":  "audio/aiff",
-		".zip":  "application/zip",
-		".7z":   "application/x-7z-compressed",
-		".rar":  "application/x-rar-compressed",
-		".tar":  "application/x-tar",
-		".gz":   "application/gzip",
-		".bz2":  "application/x-bzip2",
-		".xz":   "application/x-xz",
-		".ipa":  "application/octet-stream",
-		".dmg":  "application/x-apple-diskimage",
-		".iso":  "application/x-iso9660-image",
-		".img":  "application/x-raw-disk-image",
+		".mp3":     "audio/mpeg",
+		".wav":     "audio/wav",
+		".flac":    "audio/flac",
+		".ogg":     "audio/ogg",
+		".m4a":     "audio/mp4",
+		".aac":     "audio/aac",
+		".wma":     "audio/x-ms-wma",
+		".alac":    "audio/alac",
+		".aiff":    "audio/aiff",
+		".aif":     "audio/aiff",
+		".zip":     "application/zip",
+		".7z":      "application/x-7z-compressed",
+		".rar":     "application/x-rar-compressed",
+		".tar":     "application/x-tar",
+		".gz":      "application/gzip",
+		".bz2":     "application/x-bzip2",
+		".xz":      "application/x-xz",
+		".ipa":     "application/octet-stream",
+		".dmg":     "application/x-apple-diskimage",
+		".iso":     "application/x-iso9660-image",
+		".img":     "application/x-raw-disk-image",
 	}
 	if mime, ok := mimeMap[ext]; ok {
 		return mime

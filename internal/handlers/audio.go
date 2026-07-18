@@ -13,8 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/disintegration/imaging"
 	"github.com/dhowden/tag"
+	"github.com/disintegration/imaging"
 
 	"github.com/EdgarOrtegaRamirez/thumbnail-forge/internal/models"
 )

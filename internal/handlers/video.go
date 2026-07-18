@@ -93,7 +93,7 @@ func extractFrame(videoPath, outputPath, timestamp string) error {
 		"-ss", strconv.FormatFloat(seconds, 'f', 3, 64),
 		"-vframes", "1",
 		"-q:v", "2", // High quality JPEG
-		"-y",        // Overwrite output
+		"-y", // Overwrite output
 		outputPath,
 	)
 

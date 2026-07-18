@@ -86,9 +86,9 @@ func TestDiskImageHandler_CanHandle(t *testing.T) {
 	handler := &DiskImageHandler{}
 
 	tests := []struct {
-		name    string
-		ftype   models.FileType
-		expect  bool
+		name   string
+		ftype  models.FileType
+		expect bool
 	}{
 		{"DiskImage", models.FileTypeDiskImage, true},
 		{"Image", models.FileTypeImage, false},

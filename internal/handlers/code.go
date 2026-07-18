@@ -103,7 +103,7 @@ func (h *CodeHandler) renderTextWithLineNumbers(content string, info *models.Fil
 	}
 
 	// Calculate dimensions
-	fontWidth := 8  // Approximate character width
+	fontWidth := 8   // Approximate character width
 	fontHeight := 16 // Line height
 	padding := 20
 	lineNumberWidth := 40 // Width for line numbers
