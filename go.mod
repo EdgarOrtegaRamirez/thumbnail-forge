@@ -8,7 +8,7 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/gen2brain/go-fitz v1.28.2
 	github.com/spf13/cobra v1.10.2
-	golang.org/x/image v0.44.0
+	golang.org/x/image v0.32.0
 )
 
 require (
