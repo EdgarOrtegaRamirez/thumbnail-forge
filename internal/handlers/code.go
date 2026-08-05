@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
+	"io"
 	"os"
 	"strings"
 
@@ -30,10 +32,46 @@ func (h *CodeHandler) CanHandle(info *models.FileInfo) bool {
 		info.FileType == models.FileTypeMarkdown
 }
 
+// readTruncatedFile reads up to maxLines or maxBytes of a file
+func readTruncatedFile(path string, maxLines int, maxBytes int64) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	var buf strings.Builder
+	reader := bufio.NewReader(file)
+	linesRead := 0
+	bytesRead := int64(0)
+
+	for linesRead < maxLines && bytesRead < maxBytes {
+		line, err := reader.ReadString('\n')
+		if len(line) > 0 {
+			if bytesRead+int64(len(line)) > maxBytes {
+				allowed := maxBytes - bytesRead
+				buf.WriteString(line[:allowed])
+				break
+			}
+			buf.WriteString(line)
+			bytesRead += int64(len(line))
+			linesRead++
+		}
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return "", err
+		}
+	}
+
+	return buf.String(), nil
+}
+
 // Generate creates a thumbnail from a code or text file
 func (h *CodeHandler) Generate(info *models.FileInfo, opts *models.ThumbnailOptions) (*models.ThumbnailResult, error) {
-	// Read file content
-	content, err := os.ReadFile(info.Path)
+	// Read file content up to 100 lines or 50KB to optimize memory and speed on large files
+	content, err := readTruncatedFile(info.Path, 100, 50*1024)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
@@ -41,16 +79,16 @@ func (h *CodeHandler) Generate(info *models.FileInfo, opts *models.ThumbnailOpti
 	// For markdown, try to render with syntax highlighting
 	if info.FileType == models.FileTypeMarkdown {
 		// Markdown is plain text with formatting, render as text
-		return h.renderText(string(content), info, opts)
+		return h.renderText(content, info, opts)
 	}
 
 	// For code files, try syntax highlighting
 	if info.FileType == models.FileTypeCode {
-		return h.renderCode(string(content), info, opts)
+		return h.renderCode(content, info, opts)
 	}
 
 	// For text files, render as plain text
-	return h.renderText(string(content), info, opts)
+	return h.renderText(content, info, opts)
 }
 
 // renderCode renders code with syntax highlighting

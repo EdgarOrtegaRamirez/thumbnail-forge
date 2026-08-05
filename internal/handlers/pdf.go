@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"image"
-	"image/draw"
 
 	"github.com/disintegration/imaging"
 	"github.com/gen2brain/go-fitz"
@@ -55,12 +53,8 @@ func (h *PDFHandler) Generate(info *models.FileInfo, opts *models.ThumbnailOptio
 		}
 	}
 
-	// Convert to NRGBA for consistent processing
-	nrgba := image.NewNRGBA(img.Bounds())
-	draw.Draw(nrgba, nrgba.Bounds(), img, img.Bounds().Min, draw.Src)
-
-	// Resize to fit dimensions
-	resized := ResizeImage(nrgba, opts.Width, opts.Height)
+	// Resize to fit dimensions directly (avoid redundant full-resolution NRGBA conversion and copy)
+	resized := ResizeImage(img, opts.Width, opts.Height)
 
 	// Composite onto background
 	result := compositeOnBackground(resized, opts.Background)
