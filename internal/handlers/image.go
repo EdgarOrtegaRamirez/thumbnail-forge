@@ -212,6 +212,14 @@ func ResizeImage(img image.Image, maxWidth, maxHeight int) image.Image {
 	newWidth := int(float64(origWidth) * scale)
 	newHeight := int(float64(origHeight) * scale)
 
+	// Optimization: If original is extremely large (more than 3x target),
+	// fast pre-downscale to 3x target size first to avoid heavy Lanczos computation.
+	if origWidth > newWidth*3 && origHeight > newHeight*3 {
+		preWidth := newWidth * 3
+		preHeight := newHeight * 3
+		img = imaging.Resize(img, preWidth, preHeight, imaging.NearestNeighbor)
+	}
+
 	// Resize using Lanczos filter for high quality
 	return imaging.Resize(img, newWidth, newHeight, imaging.Lanczos)
 }
