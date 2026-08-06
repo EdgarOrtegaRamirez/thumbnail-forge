@@ -73,7 +73,7 @@ func getZipContents(path string) ([]string, error) {
 	return contents, nil
 }
 
-// getTarContents gets the contents of a TAR file
+// getTarContents gets the contents of a TAR file (truncated to max 10 entries for performance)
 func getTarContents(path string) ([]string, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -94,12 +94,15 @@ func getTarContents(path string) ([]string, error) {
 		}
 
 		contents = append(contents, header.Name)
+		if len(contents) >= 10 {
+			break
+		}
 	}
 
 	return contents, nil
 }
 
-// getTarGzContents gets the contents of a TAR.GZ file
+// getTarGzContents gets the contents of a TAR.GZ file (truncated to max 10 entries for performance)
 func getTarGzContents(path string) ([]string, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -126,6 +129,9 @@ func getTarGzContents(path string) ([]string, error) {
 		}
 
 		contents = append(contents, header.Name)
+		if len(contents) >= 10 {
+			break
+		}
 	}
 
 	return contents, nil
