@@ -38,7 +38,7 @@ func readTruncatedFile(path string, maxLines int, maxBytes int64) (string, error
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var buf strings.Builder
 	reader := bufio.NewReader(file)
