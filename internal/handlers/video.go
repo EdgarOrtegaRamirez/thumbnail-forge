@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"image/draw"
 	"image/jpeg"
@@ -9,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/disintegration/imaging"
 
@@ -87,8 +89,11 @@ func extractFrame(videoPath, outputPath, timestamp string) error {
 		return fmt.Errorf("invalid timestamp %q: %w", timestamp, err)
 	}
 
-	// Build ffmpeg command
-	cmd := exec.Command("ffmpeg",
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// Build ffmpeg command with context
+	cmd := exec.CommandContext(ctx, "ffmpeg",
 		"-i", videoPath,
 		"-ss", strconv.FormatFloat(seconds, 'f', 3, 64),
 		"-vframes", "1",

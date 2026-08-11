@@ -93,22 +93,22 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		Terminal:   flagTerminal,
 	}
 
-	// For now, just show what we detected
-	fmt.Printf("File: %s\n", info.Path)
-	fmt.Printf("Type: %s\n", info.FileType)
-	fmt.Printf("MIME: %s\n", info.MimeType)
-	fmt.Printf("Size: %d bytes\n", info.Size)
-	fmt.Printf("Extension: %s\n", info.Extension)
+	// For now, just show what we detected (directed to stderr)
+	fmt.Fprintf(os.Stderr, "File: %s\n", info.Path)
+	fmt.Fprintf(os.Stderr, "Type: %s\n", info.FileType)
+	fmt.Fprintf(os.Stderr, "MIME: %s\n", info.MimeType)
+	fmt.Fprintf(os.Stderr, "Size: %d bytes\n", info.Size)
+	fmt.Fprintf(os.Stderr, "Extension: %s\n", info.Extension)
 	if info.IsAnimated {
-		fmt.Printf("Animated: yes\n")
+		fmt.Fprintf(os.Stderr, "Animated: yes\n")
 	}
-	fmt.Printf("\nOptions:\n")
-	fmt.Printf("  Width: %d\n", opts.Width)
-	fmt.Printf("  Height: %d\n", opts.Height)
-	fmt.Printf("  Format: %s\n", opts.Format)
-	fmt.Printf("  Quality: %d\n", opts.Quality)
-	fmt.Printf("  Background: %s\n", flagBackground)
-	fmt.Printf("  Theme: %s\n", opts.Theme)
+	fmt.Fprintf(os.Stderr, "\nOptions:\n")
+	fmt.Fprintf(os.Stderr, "  Width: %d\n", opts.Width)
+	fmt.Fprintf(os.Stderr, "  Height: %d\n", opts.Height)
+	fmt.Fprintf(os.Stderr, "  Format: %s\n", opts.Format)
+	fmt.Fprintf(os.Stderr, "  Quality: %d\n", opts.Quality)
+	fmt.Fprintf(os.Stderr, "  Background: %s\n", flagBackground)
+	fmt.Fprintf(os.Stderr, "  Theme: %s\n", opts.Theme)
 
 	// Route to appropriate handler
 	var result *models.ThumbnailResult
@@ -183,8 +183,8 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	// Fallback to placeholder for unhandled types
 	if result == nil {
 		result = generatePlaceholderThumbnail(info, opts)
-		fmt.Printf("\nNote: Placeholder thumbnail generated for %s files\n", info.FileType)
-		fmt.Printf("Real thumbnail generation coming in future phases\n")
+		fmt.Fprintf(os.Stderr, "\nNote: Placeholder thumbnail generated for %s files\n", info.FileType)
+		fmt.Fprintf(os.Stderr, "Real thumbnail generation coming in future phases\n")
 	}
 
 	// Output to terminal if requested
@@ -212,7 +212,7 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("\nThumbnail saved to: %s\n", tmpFile.Name())
+	fmt.Fprintf(os.Stderr, "\nThumbnail saved to: %s\n", tmpFile.Name())
 	return nil
 }
 
