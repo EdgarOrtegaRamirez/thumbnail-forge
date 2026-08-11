@@ -110,73 +110,12 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	fmt.Fprintf(os.Stderr, "  Background: %s\n", flagBackground)
 	fmt.Fprintf(os.Stderr, "  Theme: %s\n", opts.Theme)
 
-	// Route to appropriate handler
+	// Route to appropriate handler dynamically via central HandlerRegistry
 	var result *models.ThumbnailResult
-
-	switch info.FileType {
-	case models.FileTypeImage:
-		handler := &handlers.ImageHandler{}
-		if handler.CanHandle(info) {
-			result, err = handler.Generate(info, opts)
-			if err != nil {
-				return fmt.Errorf("failed to generate thumbnail: %w", err)
-			}
-		}
-	case models.FileTypeCode, models.FileTypeText, models.FileTypeMarkdown:
-		handler := &handlers.CodeHandler{}
-		if handler.CanHandle(info) {
-			result, err = handler.Generate(info, opts)
-			if err != nil {
-				return fmt.Errorf("failed to generate thumbnail: %w", err)
-			}
-		}
-	case models.FileTypePDF:
-		handler := &handlers.PDFHandler{}
-		if handler.CanHandle(info) {
-			result, err = handler.Generate(info, opts)
-			if err != nil {
-				return fmt.Errorf("failed to generate thumbnail: %w", err)
-			}
-		}
-	case models.FileTypeVideo:
-		handler := &handlers.VideoHandler{}
-		if handler.CanHandle(info) {
-			result, err = handler.Generate(info, opts)
-			if err != nil {
-				return fmt.Errorf("failed to generate thumbnail: %w", err)
-			}
-		}
-	case models.FileTypeAudio:
-		handler := &handlers.AudioHandler{}
-		if handler.CanHandle(info) {
-			result, err = handler.Generate(info, opts)
-			if err != nil {
-				return fmt.Errorf("failed to generate thumbnail: %w", err)
-			}
-		}
-	case models.FileTypeOffice:
-		handler := &handlers.OfficeHandler{}
-		if handler.CanHandle(info) {
-			result, err = handler.Generate(info, opts)
-			if err != nil {
-				return fmt.Errorf("failed to generate thumbnail: %w", err)
-			}
-		}
-	case models.FileTypeArchive:
-		handler := &handlers.ArchiveHandler{}
-		if handler.CanHandle(info) {
-			result, err = handler.Generate(info, opts)
-			if err != nil {
-				return fmt.Errorf("failed to generate thumbnail: %w", err)
-			}
-		}
-	case models.FileTypeDiskImage:
-		handler := &handlers.DiskImageHandler{}
-		if handler.CanHandle(info) {
-			result, err = handler.Generate(info, opts)
-			if err != nil {
-				return fmt.Errorf("failed to generate thumbnail: %w", err)
-			}
+	if handler := handlers.GetHandler(info); handler != nil {
+		result, err = handler.Generate(info, opts)
+		if err != nil {
+			return fmt.Errorf("failed to generate thumbnail: %w", err)
 		}
 	}
 
