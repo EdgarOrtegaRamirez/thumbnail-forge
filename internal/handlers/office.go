@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"image"
 	"image/color"
@@ -9,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/disintegration/imaging"
 
@@ -87,7 +89,10 @@ func convertToPDF(inputPath, outputDir string) (string, error) {
 		inputPath,
 	}
 
-	execCmd := exec.Command(cmd, args...)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	execCmd := exec.CommandContext(ctx, cmd, args...)
 	var stderr strings.Builder
 	execCmd.Stderr = &stderr
 

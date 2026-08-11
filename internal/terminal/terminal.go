@@ -206,14 +206,8 @@ func (o *Output) displayUnicode(img image.Image) error {
 			// Get the color of the pixel
 			c := scaledImg.RGBAAt(x, y)
 
-			// Convert to ANSI 256-color
-			r := int(c.R) * 5 / 255
-			g := int(c.G) * 5 / 255
-			b := int(c.B) * 5 / 255
-			colorIndex := 16 + 36*r + 6*g + b
-
-			// Use block character with color
-			fmt.Printf("\033[38;5;%dm█\033[0m", colorIndex)
+			// Use modern 24-bit TrueColor ANSI escapes for high-fidelity rendering
+			fmt.Printf("\033[38;2;%d;%d;%dm█\033[0m", c.R, c.G, c.B)
 		}
 		fmt.Println()
 	}

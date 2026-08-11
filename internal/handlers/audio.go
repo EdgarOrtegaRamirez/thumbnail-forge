@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"image"
 	"image/color"
@@ -12,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/dhowden/tag"
 	"github.com/disintegration/imaging"
@@ -93,10 +95,13 @@ func (h *AudioHandler) generateWaveform(info *models.FileInfo, opts *models.Thum
 
 	tmpWaveform := filepath.Join(tmpDir, "waveform.png")
 
-	// Generate waveform using ffmpeg
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// Generate waveform using ffmpeg with context
 	// showwavespic colors parameter specifies waveform channel colors
 	// We use a bright color for the waveform and fill background separately
-	cmd := exec.Command("ffmpeg",
+	cmd := exec.CommandContext(ctx, "ffmpeg",
 		"-i", info.Path,
 		"-filter_complex", fmt.Sprintf(
 			"showwavespic=s=%dx%d:colors=0xcdd6f4|0xf5e0dc:split_channels=0",
