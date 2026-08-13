@@ -2,16 +2,16 @@ package handlers
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/alecthomas/chroma/v2/formatters/html"
+	"github.com/alecthomas/chroma/v2"
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/disintegration/imaging"
@@ -105,34 +105,89 @@ func (h *CodeHandler) renderCode(content string, info *models.FileInfo, opts *mo
 		style = styles.Fallback
 	}
 
-	// Format as HTML
-	formatter := html.New()
+	// Resolve style-defined default foreground and background colors
+	var defaultFg color.Color = color.RGBA{R: 220, G: 220, B: 220, A: 255}
+	textEntry := style.Get(chroma.Text)
+	if textEntry.Colour.IsSet() {
+		defaultFg = color.RGBA{R: textEntry.Colour.Red(), G: textEntry.Colour.Green(), B: textEntry.Colour.Blue(), A: 255}
+	}
+
+	var defaultBg color.Color = opts.Background
+	bgEntry := style.Get(chroma.Background)
+	if bgEntry.Background.IsSet() {
+		defaultBg = color.RGBA{R: bgEntry.Background.Red(), G: bgEntry.Background.Green(), B: bgEntry.Background.Blue(), A: 255}
+	}
+
 	iterator, err := lexer.Tokenise(nil, content)
 	if err != nil {
 		// Fall back to plain text rendering
 		return h.renderText(content, info, opts)
 	}
 
-	var buf bytes.Buffer
-	if err := formatter.Format(&buf, style, iterator); err != nil {
-		// Fall back to plain text rendering
-		return h.renderText(content, info, opts)
-	}
+	tokens := iterator.Tokens()
 
-	// For now, render as plain text with line numbers
-	// HTML rendering would require a headless browser
-	return h.renderTextWithLineNumbers(content, info, opts)
+	return h.renderHighlightedCode(tokens, defaultFg, defaultBg, info, opts)
 }
 
 // renderText renders plain text to an image
 func (h *CodeHandler) renderText(content string, info *models.FileInfo, opts *models.ThumbnailOptions) (*models.ThumbnailResult, error) {
-	return h.renderTextWithLineNumbers(content, info, opts)
+	tokens := []chroma.Token{
+		{Type: chroma.Text, Value: content},
+	}
+	defaultFg := color.RGBA{R: 200, G: 200, B: 200, A: 255}
+	return h.renderHighlightedCode(tokens, defaultFg, opts.Background, info, opts)
 }
 
-// renderTextWithLineNumbers renders text with line numbers
-func (h *CodeHandler) renderTextWithLineNumbers(content string, info *models.FileInfo, opts *models.ThumbnailOptions) (*models.ThumbnailResult, error) {
-	// Split content into lines
-	lines := strings.Split(content, "\n")
+// StyledText represents a styled span of text
+type StyledText struct {
+	Text  string
+	Color color.Color
+}
+
+// CodeLine represents a line of styled text
+type CodeLine []StyledText
+
+// Length returns the total character length of the line
+func (cl CodeLine) Length() int {
+	length := 0
+	for _, st := range cl {
+		length += len(st.Text)
+	}
+	return length
+}
+
+// renderHighlightedCode renders tokens directly onto a canvas with their styles and syntax colors
+func (h *CodeHandler) renderHighlightedCode(tokens []chroma.Token, defaultFg color.Color, defaultBg color.Color, info *models.FileInfo, opts *models.ThumbnailOptions) (*models.ThumbnailResult, error) {
+	// Let's group tokens into lines, handling internal newlines in tokens correctly.
+	var lines []CodeLine
+	var currentLine CodeLine
+
+	style := styles.Get(opts.Theme)
+	if style == nil {
+		style = styles.Fallback
+	}
+
+	for _, t := range tokens {
+		parts := strings.Split(t.Value, "\n")
+
+		// Map token type to style color
+		entry := style.Get(t.Type)
+		col := defaultFg
+		if entry.Colour.IsSet() {
+			col = color.RGBA{R: entry.Colour.Red(), G: entry.Colour.Green(), B: entry.Colour.Blue(), A: 255}
+		}
+
+		for i, part := range parts {
+			if i > 0 {
+				lines = append(lines, currentLine)
+				currentLine = CodeLine{}
+			}
+			if len(part) > 0 {
+				currentLine = append(currentLine, StyledText{Text: part, Color: col})
+			}
+		}
+	}
+	lines = append(lines, currentLine)
 
 	// Limit to first 20 lines for thumbnail
 	maxLines := 20
@@ -149,8 +204,9 @@ func (h *CodeHandler) renderTextWithLineNumbers(content string, info *models.Fil
 	// Calculate required width (find longest line)
 	maxLineLength := 0
 	for _, line := range lines {
-		if len(line) > maxLineLength {
-			maxLineLength = len(line)
+		lineLen := line.Length()
+		if lineLen > maxLineLength {
+			maxLineLength = lineLen
 		}
 	}
 
@@ -178,15 +234,13 @@ func (h *CodeHandler) renderTextWithLineNumbers(content string, info *models.Fil
 	img := image.NewRGBA(image.Rect(0, 0, imgWidth, imgHeight))
 
 	// Fill background
-	draw.Draw(img, img.Bounds(), &image.Uniform{opts.Background}, image.Point{}, draw.Src)
+	draw.Draw(img, img.Bounds(), &image.Uniform{defaultBg}, image.Point{}, draw.Src)
 
 	// Draw text
 	face := basicfont.Face7x13
 	drawer := &font.Drawer{
 		Dst:  img,
-		Src:  image.NewUniform(color.RGBA{R: 200, G: 200, B: 200, A: 255}), // Light gray text
 		Face: face,
-		Dot:  fixed.P(padding, padding+fontHeight),
 	}
 
 	// Draw line numbers and text
@@ -198,6 +252,7 @@ func (h *CodeHandler) renderTextWithLineNumbers(content string, info *models.Fil
 
 		// Draw line number
 		lineNum := fmt.Sprintf("%3d ", i+1)
+		drawer.Src = image.NewUniform(color.RGBA{R: 120, G: 120, B: 120, A: 255})
 		drawer.Dot = fixed.P(padding, y+fontHeight)
 		drawer.DrawString(lineNum)
 
@@ -206,17 +261,35 @@ func (h *CodeHandler) renderTextWithLineNumbers(content string, info *models.Fil
 		if maxChars < 0 {
 			maxChars = 0
 		}
-		displayLine := line
-		if len(displayLine) > maxChars {
-			if maxChars > 3 {
-				displayLine = displayLine[:maxChars-3] + "..."
-			} else {
-				displayLine = displayLine[:maxChars]
-			}
-		}
 
-		drawer.Dot = fixed.P(padding+lineNumberWidth, y+fontHeight)
-		drawer.DrawString(displayLine)
+		currentX := padding + lineNumberWidth
+		charsDrawn := 0
+
+		for _, st := range line {
+			if charsDrawn >= maxChars {
+				break
+			}
+
+			displayStr := st.Text
+			// Expand tabs to 4 spaces
+			displayStr = strings.ReplaceAll(displayStr, "\t", "    ")
+
+			if charsDrawn+len(displayStr) > maxChars {
+				needed := maxChars - charsDrawn
+				if needed > 3 {
+					displayStr = displayStr[:needed-3] + "..."
+				} else {
+					displayStr = displayStr[:needed]
+				}
+			}
+
+			drawer.Src = image.NewUniform(st.Color)
+			drawer.Dot = fixed.P(currentX, y+fontHeight)
+			drawer.DrawString(displayStr)
+
+			currentX += len(displayStr) * fontWidth
+			charsDrawn += len(displayStr)
+		}
 	}
 
 	// Draw title bar with filename
@@ -232,7 +305,14 @@ func (h *CodeHandler) renderTextWithLineNumbers(content string, info *models.Fil
 		Face: face,
 		Dot:  fixed.P(padding, titleHeight-10),
 	}
-	titleDrawer.DrawString(info.Extension[1:]) // Remove the dot
+
+	extName := ""
+	if len(info.Extension) > 1 {
+		extName = info.Extension[1:]
+	} else {
+		extName = filepath.Base(info.Path)
+	}
+	titleDrawer.DrawString(extName)
 
 	// Resize to fit dimensions if needed
 	result := imaging.Resize(titleImg, opts.Width, opts.Height, imaging.Lanczos)
@@ -245,7 +325,6 @@ func (h *CodeHandler) renderTextWithLineNumbers(content string, info *models.Fil
 	}, nil
 }
 
-// init registers the code format decoders
 func init() {
-	// Chroma is registered via blank imports above
+	// Chroma lexers/styles are registered via blank imports or standard library
 }
